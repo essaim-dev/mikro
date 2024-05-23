@@ -1,0 +1,4 @@
+github.com/hit9/bitproto/lib/go v0.0.0-20240430103452-b9025bfeefd3 h1:PHTxF1c5PDiiCp/cd/touJvBXbN49hfktMlhyrYqy7s=
+github.com/hit9/bitproto/lib/go v0.0.0-20240430103452-b9025bfeefd3/go.mod h1:WN+TYCfaxIU95qhMbPEVKlK6QiDuE3NRklcst5ZhGcQ=
+github.com/karalabe/hid v1.0.1-0.20240306101548-573246063e52 h1:msKODTL1m0wigztaqILOtla9HeW1ciscYG4xjLtvk5I=
+github.com/karalabe/hid v1.0.1-0.20240306101548-573246063e52/go.mod h1:qk1sX/IBgppQNcGCRoj90u6EGC056EBoIc1oEjCWla8=

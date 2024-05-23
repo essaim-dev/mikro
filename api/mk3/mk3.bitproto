@@ -1,0 +1,41 @@
+proto mk3
+
+message PadReport {
+    option max_bytes = 64
+
+    byte magic = 1
+    uint8 pad = 2
+    uint4 action = 3
+    uint12 velocity = 4
+    byte[60] reserved = 5
+}
+
+message ButtonReport {
+    option max_bytes = 14
+
+    byte magic = 1
+    uint40 pressed_buttons = 2
+    bool encoder_touched = 3
+    uint7 reserved1 = 4
+    uint4 encoder_value = 5
+    uint4 reserved2 = 6
+    uint16 strip_time = 7
+    uint8 strip_value1 = 8
+    byte reserved3 = 9
+    uint8 strip_value2 = 10
+    byte reserved4 = 11
+}
+
+message ColoredLight {
+    uint2 intensity = 1
+    uint6 color = 2
+}
+
+message LightState {
+    option max_bytes = 91
+
+    byte magic = 1
+    ColoredLight[39] buttons = 2
+    ColoredLight[16] pads = 3
+    ColoredLight[35] strip = 4
+}
