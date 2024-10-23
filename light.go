@@ -1,6 +1,6 @@
 package mikro
 
-import bp "github.com/antoi-ne/mikro/api/mk3"
+import bp "gessaim.dev/mikro/api/mk3"
 
 //go:generate go run golang.org/x/tools/cmd/stringer@latest -type=Intensity -trimprefix=Intensity
 type Intensity uint8

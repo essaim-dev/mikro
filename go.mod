@@ -1,4 +1,4 @@
-module github.com/antoi-ne/mikro
+module gessaim.dev/mikro
 
 go 1.22.0
 
