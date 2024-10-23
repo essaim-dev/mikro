@@ -39,3 +39,12 @@ message LightState {
     ColoredLight[16] pads = 3
     ColoredLight[35] strip = 4
 }
+
+message ScreenState {
+    option max_bytes = 265
+
+    byte[3] magic1 = 1
+    byte screen_portion = 2
+    byte[5] magic2 = 3 
+    byte[256] pixels = 4
+}

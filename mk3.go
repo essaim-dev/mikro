@@ -1,7 +1,13 @@
 package mikro
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"image"
+	"image/color"
+	"image/draw"
+	"sync"
 
 	bp "github.com/antoi-ne/mikro/api/mk3"
 	"github.com/karalabe/hid"
@@ -10,10 +16,22 @@ import (
 const (
 	Mk3VID = 0x17cc
 	Mk3PID = 0x1700
+
+	buttonReport byte = 1
+	padReport    byte = 2
 )
+
+type OnPadPunc func(msg PadMessage)
+type OnButtonFunc func(msg ButtonMessage)
 
 type Mk3 struct {
 	device hid.Device
+
+	onPadFunc    OnPadPunc
+	onButtonFunc OnButtonFunc
+
+	lights   Lights
+	lightsMu sync.RWMutex
 }
 
 func OpenMk3() (*Mk3, error) {
@@ -29,6 +47,7 @@ func OpenMk3() (*Mk3, error) {
 
 	return &Mk3{
 		device: device,
+		lights: NewLights(),
 	}, nil
 }
 
@@ -36,42 +55,99 @@ func (m *Mk3) Close() error {
 	return m.device.Close()
 }
 
-func (m *Mk3) ReadMessage() (Message, error) {
-	buf, err := m.read()
-	if err != nil {
-		return nil, err
+func (m *Mk3) SetOnPadFunc(fn OnPadPunc) {
+	m.onPadFunc = fn
+}
+
+func (m *Mk3) SetOnButtonFunc(fn OnButtonFunc) {
+	m.onButtonFunc = fn
+}
+
+func (m *Mk3) Lights() Lights {
+	m.lightsMu.RLock()
+	defer m.lightsMu.RUnlock()
+
+	return m.lights
+}
+
+func (m *Mk3) SetLights(lights Lights) error {
+	m.lightsMu.Lock()
+
+	m.lights = lights
+	state := m.lights.toBP()
+
+	m.lightsMu.Unlock()
+
+	if _, err := m.device.Write(state.Encode()); err != nil {
+		return fmt.Errorf("could not write updated light state: %w", err)
 	}
 
-	if len(buf) == 0 {
-		return nil, errors.New("empty message")
+	return nil
+}
+
+func (m *Mk3) SetScreen(img image.Image) error {
+	i := image.NewPaletted(image.Rect(0, 0, 128, 32), color.Palette{color.Black, color.White})
+
+	draw.FloydSteinberg.Draw(i, i.Bounds(), img, image.Pt(0, 0))
+
+	bitPixels := imageToBit(i)
+
+	stateHigh := bp.ScreenState{
+		Magic1:        [3]byte{0xe0, 0x00, 0x00},
+		ScreenPortion: 0x00,
+		Magic2:        [5]byte{0x00, 0x80, 0x00, 0x02, 0x0},
+		Pixels:        [256]byte(bitPixels[:256]),
+	}
+	stateLow := bp.ScreenState{
+		Magic1:        [3]byte{0xe0, 0x00, 0x00},
+		ScreenPortion: 0x02,
+		Magic2:        [5]byte{0x00, 0x80, 0x00, 0x02, 0x0},
+		Pixels:        [256]byte(bitPixels[256:]),
 	}
 
-	switch MessageType(buf[0]) {
-	case ButtonType:
-		return m.decodeButtonMessage(buf), nil
-	case PadType:
-		return m.decodePadMessage(buf), nil
-	default:
-		return nil, errors.New("unknown message type")
+	if _, err := m.device.Write(stateHigh.Encode()); err != nil {
+		return fmt.Errorf("could not write updated higher screen state: %w", err)
+	}
+	if _, err := m.device.Write(stateLow.Encode()); err != nil {
+		return fmt.Errorf("could not write updated lower screen state: %w", err)
+	}
+
+	return nil
+}
+
+func (m *Mk3) Run(ctx context.Context) error {
+	b := make([]byte, 1024)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			_, err := m.device.Read(b)
+			if err != nil {
+				return fmt.Errorf("could not read message from device: %w", err)
+			}
+			switch b[0] {
+			case buttonReport:
+				if m.onButtonFunc != nil {
+					m.onButtonFunc(m.decodeButtonMessage(b))
+				}
+			case padReport:
+				if m.onPadFunc != nil {
+					m.onPadFunc(m.decodePadMessage(b))
+				}
+			default:
+				return fmt.Errorf("received unknown message type: %b", b[0])
+			}
+		}
 	}
 }
 
-func (m *Mk3) read() ([]byte, error) {
-	buf := make([]byte, 1024)
-
-	n, err := m.device.Read(buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf[:n], nil
-}
-
-func (m *Mk3) decodeButtonMessage(buf []byte) *ButtonMessage {
+func (m *Mk3) decodeButtonMessage(buf []byte) ButtonMessage {
 	report := bp.ButtonReport{}
 	report.Decode(buf)
 
-	return &ButtonMessage{
+	return ButtonMessage{
 		pressed:         report.PressedButtons,
 		encoderPosition: report.EncoderValue,
 		encoderTouched:  report.EncoderTouched,
@@ -80,13 +156,32 @@ func (m *Mk3) decodeButtonMessage(buf []byte) *ButtonMessage {
 	}
 }
 
-func (m *Mk3) decodePadMessage(buf []byte) *PadMessage {
+func (m *Mk3) decodePadMessage(buf []byte) PadMessage {
 	report := bp.PadReport{}
 	report.Decode(buf)
 
-	return &PadMessage{
+	return PadMessage{
 		pad:      Pad(report.Pad),
 		velocity: report.Velocity,
 		action:   PadAction(report.Action),
 	}
+}
+
+// Converts an image.Image to a byte slice where each pixel is represented by 1 bit
+func imageToBit(img *image.Paletted) []byte {
+	output := make([]byte, 512)
+
+	for i := range 128 {
+		for line := range 4 {
+			byteVal := byte(0)
+			for bit := range 8 {
+				byteVal = byteVal << 1
+				if img.At(i, (8*line)+(7-bit)) == color.Black {
+					byteVal += 1
+				}
+			}
+			output[128*line+i] = byteVal
+		}
+	}
+	return output
 }

@@ -379,3 +379,87 @@ func (m *LightState) BpProcessInt(di *bp.DataIndexer) {
 			return
 	}
 }
+
+type ScreenState struct {
+	Magic1 [3]byte `json:"magic1"` // 24bit
+	ScreenPortion byte `json:"screen_portion"` // 8bit
+	Magic2 [5]byte `json:"magic2"` // 40bit
+	Pixels [256]byte `json:"pixels"` // 2048bit
+}
+
+// Number of bytes to serialize struct ScreenState
+const BYTES_LENGTH_SCREEN_STATE uint32 = 265
+
+func (m *ScreenState) Size() uint32 { return 265 }
+
+// Returns string representation for struct ScreenState.
+func (m *ScreenState) String() string {
+	v, _ := jsonMarshal(m)
+	return string(v)
+}
+
+// Encode struct ScreenState to bytes buffer.
+func (m *ScreenState) Encode() []byte {
+	ctx := bp.NewEncodeContext(int(m.Size()))
+	m.BpProcessor().Process(ctx, nil, m)
+	return ctx.Buffer()
+}
+
+func (m *ScreenState) Decode(s []byte) {
+	ctx := bp.NewDecodeContext(s)
+	m.BpProcessor().Process(ctx, nil, m)
+}
+
+func (m *ScreenState) BpProcessor() bp.Processor {
+	fieldDescriptors := []*bp.MessageFieldProcessor{
+		bp.NewMessageFieldProcessor(1, bp.NewArray(false, 3, bp.NewByte())),
+		bp.NewMessageFieldProcessor(2, bp.NewByte()),
+		bp.NewMessageFieldProcessor(3, bp.NewArray(false, 5, bp.NewByte())),
+		bp.NewMessageFieldProcessor(4, bp.NewArray(false, 256, bp.NewByte())),
+	}
+	return bp.NewMessageProcessor(false, 2120, fieldDescriptors)
+}
+
+func (m *ScreenState) BpGetAccessor(di *bp.DataIndexer) bp.Accessor {
+	switch di.F() {
+	default:
+		return nil  // Won't reached
+	}
+}
+
+func (m *ScreenState) BpSetByte(di *bp.DataIndexer, lshift int, b byte) {
+	switch di.F() {
+		case 1:
+			m.Magic1[di.I(0)] |= (byte(b) << lshift)
+		case 2:
+			m.ScreenPortion |= (byte(b) << lshift)
+		case 3:
+			m.Magic2[di.I(0)] |= (byte(b) << lshift)
+		case 4:
+			m.Pixels[di.I(0)] |= (byte(b) << lshift)
+		default:
+			return
+	}
+}
+
+func (m *ScreenState) BpGetByte(di *bp.DataIndexer, rshift int) byte {
+	switch di.F() {
+		case 1:
+			return byte(m.Magic1[di.I(0)] >> rshift)
+		case 2:
+			return byte(m.ScreenPortion >> rshift)
+		case 3:
+			return byte(m.Magic2[di.I(0)] >> rshift)
+		case 4:
+			return byte(m.Pixels[di.I(0)] >> rshift)
+		default:
+			return byte(0) // Won't reached
+	}
+}
+
+func (m *ScreenState) BpProcessInt(di *bp.DataIndexer) {
+	switch di.F() {
+		default:
+			return
+	}
+}
