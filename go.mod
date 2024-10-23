@@ -1,4 +1,4 @@
-module gessaim.dev/mikro
+module essaim.dev/mikro
 
 go 1.22.0
 
