@@ -1,6 +1,6 @@
 package mikro
 
-import bp "gessaim.dev/mikro/api/mk3"
+import bp "essaim.dev/mikro/api/mk3"
 
 //go:generate go run golang.org/x/tools/cmd/stringer@latest -type=Intensity -trimprefix=Intensity
 type Intensity uint8

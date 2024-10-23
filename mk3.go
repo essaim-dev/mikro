@@ -9,7 +9,7 @@ import (
 	"image/draw"
 	"sync"
 
-	bp "gessaim.dev/mikro/api/mk3"
+	bp "essaim.dev/mikro/api/mk3"
 	"github.com/karalabe/hid"
 )
 
