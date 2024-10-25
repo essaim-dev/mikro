@@ -17,8 +17,9 @@ var _ = bp.Useless
 type PadReport struct {
 	Magic byte `json:"magic"` // 8bit
 	Pad uint8 `json:"pad"` // 8bit
+	Unknwn uint8 `json:"unknwn"` // 4bit
 	Action uint8 `json:"action"` // 4bit
-	Velocity uint16 `json:"velocity"` // 12bit
+	Velocity uint8 `json:"velocity"` // 8bit
 	Reserved [60]byte `json:"reserved"` // 480bit
 }
 
@@ -50,8 +51,9 @@ func (m *PadReport) BpProcessor() bp.Processor {
 		bp.NewMessageFieldProcessor(1, bp.NewByte()),
 		bp.NewMessageFieldProcessor(2, bp.NewUint(8)),
 		bp.NewMessageFieldProcessor(3, bp.NewUint(4)),
-		bp.NewMessageFieldProcessor(4, bp.NewUint(12)),
-		bp.NewMessageFieldProcessor(5, bp.NewArray(false, 60, bp.NewByte())),
+		bp.NewMessageFieldProcessor(4, bp.NewUint(4)),
+		bp.NewMessageFieldProcessor(5, bp.NewUint(8)),
+		bp.NewMessageFieldProcessor(6, bp.NewArray(false, 60, bp.NewByte())),
 	}
 	return bp.NewMessageProcessor(false, 512, fieldDescriptors)
 }
@@ -70,10 +72,12 @@ func (m *PadReport) BpSetByte(di *bp.DataIndexer, lshift int, b byte) {
 		case 2:
 			m.Pad |= (uint8(b) << lshift)
 		case 3:
-			m.Action |= (uint8(b) << lshift)
+			m.Unknwn |= (uint8(b) << lshift)
 		case 4:
-			m.Velocity |= (uint16(b) << lshift)
+			m.Action |= (uint8(b) << lshift)
 		case 5:
+			m.Velocity |= (uint8(b) << lshift)
+		case 6:
 			m.Reserved[di.I(0)] |= (byte(b) << lshift)
 		default:
 			return
@@ -87,10 +91,12 @@ func (m *PadReport) BpGetByte(di *bp.DataIndexer, rshift int) byte {
 		case 2:
 			return byte(m.Pad >> rshift)
 		case 3:
-			return byte(m.Action >> rshift)
+			return byte(m.Unknwn >> rshift)
 		case 4:
-			return byte(m.Velocity >> rshift)
+			return byte(m.Action >> rshift)
 		case 5:
+			return byte(m.Velocity >> rshift)
+		case 6:
 			return byte(m.Reserved[di.I(0)] >> rshift)
 		default:
 			return byte(0) // Won't reached

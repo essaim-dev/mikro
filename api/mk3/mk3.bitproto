@@ -5,9 +5,10 @@ message PadReport {
 
     byte magic = 1
     uint8 pad = 2
-    uint4 action = 3
-    uint12 velocity = 4
-    byte[60] reserved = 5
+    uint4 unknwn = 3
+    uint4 action = 4
+    uint8 velocity = 5
+    byte[60] reserved = 6
 }
 
 message ButtonReport {
