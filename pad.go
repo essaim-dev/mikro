@@ -54,14 +54,15 @@ type PadAction uint8
 
 const (
 	PadActionPressed PadAction = iota + 1
-	PadActionTouched
 	PadActionReleased
+	PadActionReleased2
+	PadActionTouched
 )
 
 type PadMessage struct {
 	pad      Pad
 	velocity uint16
-	action   PadAction
+	actions  uint8
 }
 
 func (p *PadMessage) Pad() Pad {
@@ -72,6 +73,14 @@ func (p *PadMessage) Velocity() uint16 {
 	return p.velocity
 }
 
-func (p *PadMessage) Action() PadAction {
-	return p.action
+func (p *PadMessage) Actions() []PadAction {
+	var actions []PadAction
+
+	for idx := 0; idx < 4; idx++ {
+		if p.actions&(1<<idx) != 0 {
+			actions = append(actions, PadAction(idx+1))
+		}
+	}
+
+	return actions
 }

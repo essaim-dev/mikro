@@ -160,7 +160,7 @@ func (m *Mk3) decodePadMessage(buf []byte) PadMessage {
 	return PadMessage{
 		pad:      Pad(report.Pad),
 		velocity: report.Velocity,
-		action:   PadAction(report.Action),
+		actions:  report.Action,
 	}
 }
 

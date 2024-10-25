@@ -9,13 +9,14 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[PadActionPressed-1]
-	_ = x[PadActionTouched-2]
-	_ = x[PadActionReleased-3]
+	_ = x[PadActionReleased-2]
+	_ = x[PadActionReleased2-3]
+	_ = x[PadActionTouched-4]
 }
 
-const _PadAction_name = "PressedTouchedReleased"
+const _PadAction_name = "PressedReleasedReleased2Touched"
 
-var _PadAction_index = [...]uint8{0, 7, 14, 22}
+var _PadAction_index = [...]uint8{0, 7, 15, 24, 31}
 
 func (i PadAction) String() string {
 	i -= 1
