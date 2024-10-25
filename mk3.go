@@ -21,14 +21,11 @@ const (
 	padReport    byte = 2
 )
 
-type OnPadPunc func(msg PadMessage)
-type OnButtonFunc func(msg ButtonMessage)
-
 type Mk3 struct {
 	device hid.Device
 
-	onPadFunc    OnPadPunc
-	onButtonFunc OnButtonFunc
+	onPadFunc    func(msg PadMessage)
+	onButtonFunc func(msg ButtonMessage)
 
 	lights   Lights
 	lightsMu sync.RWMutex
@@ -55,11 +52,11 @@ func (m *Mk3) Close() error {
 	return m.device.Close()
 }
 
-func (m *Mk3) SetOnPadFunc(fn OnPadPunc) {
+func (m *Mk3) SetOnPadFunc(fn func(msg PadMessage)) {
 	m.onPadFunc = fn
 }
 
-func (m *Mk3) SetOnButtonFunc(fn OnButtonFunc) {
+func (m *Mk3) SetOnButtonFunc(fn func(msg ButtonMessage)) {
 	m.onButtonFunc = fn
 }
 
